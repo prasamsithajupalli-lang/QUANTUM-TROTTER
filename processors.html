@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3: Noise in Trotter Simulation | Hardware Processors</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg-primary: #060913; --bg-secondary: #0f172a; --bg-card: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-primary: #818cf8; --success: #34d399; --danger: #f87171; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-primary); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
+        .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; color: var(--accent-primary); }
+        .nav-links { display: flex; gap: 20px; list-style: none; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: var(--accent-primary); }
+        .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; }
+        .panel { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
+        .panel h2 { font-size: 13px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        .chart-container { flex: 1; position: relative; min-height: 280px; }
+        .proc-info { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 15px; }
+        .comparison-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        .comparison-table th, .comparison-table td { border: 1px solid var(--border-color); padding: 8px 12px; text-align: left; }
+        .comparison-table th { background: var(--bg-card); color: var(--text-main); }
+        .comparison-table td { color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <header class="top-nav">
+        <div class="brand"><i class="fa-solid fa-atom"></i> S3 Quantum SR</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="simulator.html">Simulator</a></li>
+            <li><a href="processors.html" class="active">Processors</a></li>
+            <li><a href="report.html">SR Report & LaTeX</a></li>
+        </ul>
+    </header>
+    <div class="main-layout">
+        <section class="panel">
+            <h2><i class="fa-solid fa-microchip"></i> Hardware Topology Comparison</h2>
+            <p class="proc-info">
+                In this project, we evaluate Trotter error scaling across two distinct NISQ hardware layouts:<br>
+                • <strong>Processor A (Linear 1D Topology):</strong> Features lower single and two-qubit gate error rates, but requires expensive SWAP gate routing for long-range interactions.<br>
+                • <strong>Processor B (All-to-All Topology):</strong> Eliminates routing overhead, but suffers from elevated multi-qubit crosstalk and higher gate error rates.
+            </p>
+            <table class="comparison-table">
+                <tr>
+                    <th>Metric / Feature</th>
+                    <th>Processor A (Linear)</th>
+                    <th>Processor B (All-to-All)</th>
+                </tr>
+                <tr>
+                    <td>Connectivity</td>
+                    <td>Nearest-neighbor (1D)</td>
+                    <td>Global (All-to-All)</td>
+                </tr>
+                <tr>
+                    <td>SWAP Overhead</td>
+                    <td>High (grows with $N$)</td>
+                    <td>Minimal / Zero</td>
+                </tr>
+                <tr>
+                    <td>Crosstalk Error</td>
+                    <td>Low</td>
+                    <td>Elevated</td>
+                </tr>
+                <tr>
+                    <td>Avg. Final Fidelity</td>
+                    <td><strong>0.964</strong></td>
+                    <td><strong>0.912</strong></td>
+                </tr>
+            </table>
+        </section>
+        <section class="panel">
+            <h2><i class="fa-solid fa-scale-balanced"></i> Error Scaling & Breakdown Analysis</h2>
+            <div class="chart-container"><canvas id="errorScalingChart"></canvas></div>
+        </section>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            new Chart(document.getElementById('errorScalingChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: [2, 5, 10, 15, 20, 25],
+                    datasets: [
+                        { label: 'Processor A Error Rate', borderColor: '#818cf8', data: [0.35, 0.18, 0.12, 0.16, 0.22, 0.31], tension: 0.3 },
+                        { label: 'Processor B Error Rate', borderColor: '#f87171', data: [0.42, 0.24, 0.19, 0.28, 0.40, 0.58], tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: '#334151' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { labels: { color: '#f87171' } } } }
+            });
+        });
+    </script>
+</body>
+</html>
